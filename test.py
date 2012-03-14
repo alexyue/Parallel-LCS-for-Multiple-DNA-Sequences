@@ -55,6 +55,14 @@ def CalcXYZ(r, arr):
     return Z  
 
 
+def GetIJK(r, arr):
+    newRow = []
+    for i in range(len(arr)):
+        newRow.append(arr[i][r])
+
+    return newRow
+
+
 s = mincemeat.Server()
 
 # The data source can be any dictionary-like object
@@ -88,10 +96,30 @@ for k,v in results.iteritems():
     for s,t in v[3].iteritems():
         Bg.append(t)
 
+Za = CalcXYZ(0,Ba)
+Zc = CalcXYZ(0,Bc)
+Zt = CalcXYZ(0,Bt)
+Zg = CalcXYZ(0,Bg)
 
+newZ = {Za:"A", Zc:"C", Zt:"T", Zg:"G"}
+minZ = min(Za, Zc, Zt, Zg)
 
+letter = newZ[minZ]
 
-CalcXYZ(0, Bg)
+if letter == "A":
+    arr = Ba
+elif letter == "C":
+    arr = Bc
+elif letter == "T":
+    arr = Bt
+elif letter == "G":
+    arr = Bg
+
+newRow = GetIJK(0, arr)
+
+print newRow
+    
+
 
 
 
