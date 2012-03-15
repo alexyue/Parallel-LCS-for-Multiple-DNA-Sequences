@@ -43,12 +43,11 @@ def CalcXYZ(r, arr):
     Z = 0
 
     l = len(r)
-    print r, arr
     for i in range(l):
         X += arr[i][r[i]]
 
     for i in range(l - 1):
-        Y += math.fabs(arr[i][r[i]] - arr[i + 1][r[i]])
+        Y += math.fabs(arr[i][r[i]] - arr[i + 1][r[i+1]])
 
    # X = arr[0][r] + arr[1][r] + arr[2][r]
    # Y = math.fabs(arr[0][r] - arr[1][r]) + math.fabs(arr[1][r] - arr[2][r])  
@@ -72,8 +71,9 @@ def UnjagArray(arr):
 
 def GetIJK(r, arr):
     newRow = []
-    for i in range(len(arr)):
-        newRow.append(arr[i][r])
+    l = len(r)
+    for i in range(l):
+        newRow.append(arr[i][r[i]])
 
     return newRow
 
@@ -129,56 +129,43 @@ UnjagArray(Bc)
 UnjagArray(Bt)
 UnjagArray(Bg)
 
-initPos = [0,0,0]
+newPosa = [0,0,0]
+newPosc = [0,0,0]
+newPost = [0,0,0]
+newPosg = [0,0,0]
 
-Za = CalcXYZ(initPos,Ba)
-Zc = CalcXYZ(initPos,Bc)
-Zt = CalcXYZ(initPos,Bt)
-Zg = CalcXYZ(initPos,Bg)
+for i in range(6):
+    Za = CalcXYZ(newPosa,Ba)
+    Zc = CalcXYZ(newPosc,Bc)
+    Zt = CalcXYZ(newPost,Bt)
+    Zg = CalcXYZ(newPosg,Bg)
 
-newZ = {Za:"A", Zc:"C", Zt:"T", Zg:"G"}
-minZ = min(Za, Zc, Zt, Zg)
+    newZ = {Za:"A", Zc:"C", Zt:"T", Zg:"G"}
+    minZ = min(Za, Zc, Zt, Zg)
 
-letter = newZ[minZ]
+    letter = newZ[minZ]
 
-if letter == "A":
-    arr = Ba
-elif letter == "C":
-    arr = Bc
-elif letter == "T":
-    arr = Bt
-elif letter == "G":
-    arr = Bg
+    if letter == "A":
+        arr = Ba
+        nextPos = newPosa
+    elif letter == "C":
+        arr = Bc
+        nextPos = newPosc
+    elif letter == "T":
+        arr = Bt
+        nextPos = newPost
+    elif letter == "G":
+        arr = Bg
+        nextPos = newPosg
 
-print letter
+    print letter
 
-newRow = GetIJK(0, arr) #fix this for more strings
+    newRow = GetIJK(nextPos, arr) 
 
-newPosa = GetNextIndexes(newRow, Ba)
-newPosc = GetNextIndexes(newRow, Bc)
-newPost = GetNextIndexes(newRow, Bt)
-newPosg = GetNextIndexes(newRow, Bg)
+    newPosa = GetNextIndexes(newRow, Ba)
+    newPosc = GetNextIndexes(newRow, Bc)
+    newPost = GetNextIndexes(newRow, Bt)
+    newPosg = GetNextIndexes(newRow, Bg)
 
-
-Za = CalcXYZ(newPosa,Ba)
-Zc = CalcXYZ(newPosc,Bc)
-Zt = CalcXYZ(newPost,Bt)
-Zg = CalcXYZ(newPosg,Bg)
-
-newZ = {Za:"A", Zc:"C", Zt:"T", Zg:"G"}
-minZ = min(Za, Zc, Zt, Zg)
-
-letter = newZ[minZ]
-
-if letter == "A":
-    arr = Ba
-elif letter == "C":
-    arr = Bc
-elif letter == "T":
-    arr = Bt
-elif letter == "G":
-    arr = Bg
-
-print letter
-
-
+    print newPosa, newPosc, newPost, newPosg
+    #print newPosc
