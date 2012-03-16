@@ -2,10 +2,15 @@
 import mincemeat
 import math
 from psim import PSim
+import sys
 
-data = ["ACTTCAGGCTAA",
-        "TTCTAAAGCAAT",
-        "AACCGTATTCGA"
+#TODO:  Fix hardcode for 3 string
+#       Fix if no A,C,G, or T in string
+#       Generalize more?
+
+data = ["AATCG",
+        "TACGG",
+        "CAGCG"
         ]
 
 
@@ -91,14 +96,16 @@ def GetNextIndexes(r, arr):
     return newIndexes
 
 def GetLetter(newPosa, newPosc, newPost, newPosg):
-    #Send positions to each process    
+
+    #Send positions to each process
+ 
     comm.send(1, newPosa)
     comm.send(2, newPosc)
     comm.send(3, newPost)
     comm.send(4, newPosg)
 
     #receive Z's
-    Za = comm.recv(1)
+    Za = comm.recv(1)        
     Zc = comm.recv(2)
     Zt = comm.recv(3)
     Zg = comm.recv(4)
@@ -128,6 +135,7 @@ def GetLetter(newPosa, newPosc, newPost, newPosg):
     newRow = GetIJK(nextPos, arr) 
 
     return newRow
+
 
 s = mincemeat.Server()
 
@@ -169,58 +177,44 @@ UnjagArray(Bg)
 
 comm = PSim(5)  #4 bases
 
-if comm.rank == 0:
-    newPosa = [0,0,0]
-    newPosc = [0,0,0]
-    newPost = [0,0,0]
-    newPosg = [0,0,0]
+newPosa = [0,0,0]
+newPosc = [0,0,0]
+newPost = [0,0,0]
+newPosg = [0,0,0]
 
 
-    newRow = GetLetter(newPosa, newPosc, newPost, newPosg)
+while True:
 
-    newPosa = GetNextIndexes(newRow, Ba)
-    newPosc = GetNextIndexes(newRow, Bc)
-    newPost = GetNextIndexes(newRow, Bt)
-    newPosg = GetNextIndexes(newRow, Bg)
+    if comm.rank == 0:
+        newRow = GetLetter(newPosa, newPosc, newPost, newPosg)
 
-elif comm.rank == 1:
-    #receive arrays
-    newPos = comm.recv(0)
+        newPosa = GetNextIndexes(newRow, Ba)
+        newPosc = GetNextIndexes(newRow, Bc)
+        newPost = GetNextIndexes(newRow, Bt)
+        newPosg = GetNextIndexes(newRow, Bg)
+       
+        if len(newPosa) < 3 and len(newPosc) < 3 and len(newPost) < 3 and len(newPosg) < 3:  #TODO: Fix 3
+            break
+    else:
+        #receive arrays
+        newPos = comm.recv(0)
 
-    #calc Z
-    Z = CalcXYZ(newPos,Ba)
+        if comm.rank == 1:
+            B = Ba
+        elif comm.rank == 2:
+            B = Bc
+        elif comm.rank == 3:
+            B = Bt
+        elif comm.rank == 4:
+            B = Bg
 
-    #send Z back
-    comm.send(0,Z)
+        if len(newPos) < 3:  #TODO: Fix 3
+            Z = sys.maxint
+        else:
+            Z = CalcXYZ(newPos, B)
 
-elif comm.rank == 2:
-    #receive arrays
-    newPos = comm.recv(0)
+        comm.send(0, Z)
 
-    #calc Z
-    Z = CalcXYZ(newPos,Bc)
 
-    #send Z back
-    comm.send(0,Z)
-
-elif comm.rank == 3:
-    #receive arrays
-    newPos = comm.recv(0)
-
-    #calc Z
-    Z = CalcXYZ(newPos,Bt)
-
-    #send Z back
-    comm.send(0,Z)
-
-elif comm.rank == 4:
-    #receive arrays
-    newPos = comm.recv(0)
-
-    #calc Z
-    Z = CalcXYZ(newPos,Bg)
-
-    #send Z back
-    comm.send(0,Z)
 
 
