@@ -16,16 +16,17 @@
 #!/usr/bin/env python
 import mincemeat
 import math
-from psim import PSim
 import sys
+from psim import PSim
 
-#TODO:  Fix hardcode for 3 string
+#TODO:  
 #       Fix if no A,C,G, or T in string
 #       Generalize more?
 
-data = ["AATCG",
-        "TACGG",
-        "CAGCG"
+data = ["ACTTCAGGCTAA",
+        "TTCTAAAGCAAT",
+        "AACCGTATTCGA",
+        "AAGCTGAACGAT"
         ]
 
 
@@ -83,9 +84,13 @@ def CalcXYZ(r, arr):
 
 #Method "Unjags" the 2D array to ensure that each column in the array has the same length
 #This helps in the algorithm to avoid any indexing issues.  We append a 0 to the end of the arrays
-#TODO: More than 3 string
 def UnjagArray(arr):
-    maxLength = max([len(arr[0]), len(arr[1]), len(arr[2])])
+    arrLengths = []
+
+    for i in range(len(arr)):
+        arrLengths.append(len(arr[i]))    
+
+    maxLength = max(arrLengths)
 
     #fill in missing lengths
     for i in range(len(arr)):
@@ -96,7 +101,6 @@ def UnjagArray(arr):
                 arr[i].append(0)
 
 #Method gets the indexes for the strings that were used in calculating the selected Z
-#TODO:  More than I,J,K
 def GetIJK(r, arr):
     newRow = []
     l = len(r)
@@ -122,7 +126,7 @@ def GetNextIndexes(r, arr):
 def GetLetter(newPosa, newPosc, newPost, newPosg):
 
     #Send positions to each process
-     comm.send(1, newPosa)
+    comm.send(1, newPosa)
     comm.send(2, newPosc)
     comm.send(3, newPost)
     comm.send(4, newPosg)
@@ -197,17 +201,25 @@ UnjagArray(Bc)
 UnjagArray(Bt)
 UnjagArray(Bg)
 
+#Number of strings
+numStrings = len(Ba)
+
+newPosa = []
+newPosc = []
+newPost = []
+newPosg = []
+
+#build initial index seed
+for i in range(numStrings):
+    newPosa.append(0)  
+    newPosc.append(0)  
+    newPost.append(0)  
+    newPosg.append(0)  
 
 #Now we parallelize the calculating of the Z values
 #We create 5 seperate processes, 1 master process to direct and control
 #and 4 other processes to each calculated the Z values
 comm = PSim(5)  #4 bases
-
-newPosa = [0,0,0]
-newPosc = [0,0,0]
-newPost = [0,0,0]
-newPosg = [0,0,0]
-
 
 while True:
 
@@ -219,7 +231,10 @@ while True:
         newPost = GetNextIndexes(newRow, Bt)
         newPosg = GetNextIndexes(newRow, Bg)
        
-        if len(newPosa) < 3 and len(newPosc) < 3 and len(newPost) < 3 and len(newPosg) < 3:  #TODO: Fix 3
+        if len(newPosa) < numStrings and \
+           len(newPosc) < numStrings and \
+           len(newPost) < numStrings and \
+           len(newPosg) < numStrings:  
             break
     else:
         #receive arrays
@@ -234,7 +249,7 @@ while True:
         elif comm.rank == 4:
             B = Bg
 
-        if len(newPos) < 3:  #TODO: Fix 3
+        if len(newPos) < numStrings:  
             Z = sys.maxint
         else:
             Z = CalcXYZ(newPos, B)
