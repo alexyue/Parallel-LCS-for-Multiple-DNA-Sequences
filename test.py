@@ -1,3 +1,18 @@
+#Alex Yue
+#CSC 503
+#Final Project - LCS in Multiple DNA Sequences
+#
+#
+#This program is used to determine the longest common subsequence (LCS) found between multiple DNA
+#sequences.  The algorithm is based on the following research paper here:
+#    www.niitcrcs.com/iccs/papers/2005_48.pdf
+#
+#Some improvements were made in addition to the algorithm, in particular the initialization of the
+#"buckets".  Using Map/Reduce we can parallelize the filling of the buckets to keep the runtime down.
+#
+#This program assumes that we are only working with nucleotides (4 bases, A,C,T,G), although could 
+#be generalized to a more generic alphabet.
+
 #!/usr/bin/env python
 import mincemeat
 import math
@@ -14,14 +29,19 @@ data = ["AATCG",
         ]
 
 
-#For each string, map each letter to the index
+#Map Function - 
+#  This is the mapping function used to map the index positions of each unique letter in the
+#  set of data.  Each index for each letter is mapped for each string that is to be compared.
 def mapfn(k, v):
     l = len(v)
 
     for w in range(l):
         yield k, {v[w] : w}
 
-#reduce to 4 arrays
+#Reduce Function - 
+#  This is the reduction function that is used to reduce the mapped indexes for each unique letter
+#  in the strings and break them out into "buckets/arrays" of each nucleotide.  This will reduce the 
+#  mapped data into 4 lists for each nucleotide.
 def reducefn(k, vs):
     Ba = []
     Bc = []
@@ -42,6 +62,8 @@ def reducefn(k, vs):
  
     return {"A": Ba}, {"C": Bc} , {"T": Bt}, {"G": Bg}
 
+#Method calculates Z value which is used in the algorithm to figure out
+#which nucleotide is part of the subsequence.
 def CalcXYZ(r, arr):
     X = 0
     Y = 0
@@ -54,14 +76,14 @@ def CalcXYZ(r, arr):
     for i in range(l - 1):
         Y += math.fabs(arr[i][r[i]] - arr[i + 1][r[i+1]])
 
-   # X = arr[0][r] + arr[1][r] + arr[2][r]
-   # Y = math.fabs(arr[0][r] - arr[1][r]) + math.fabs(arr[1][r] - arr[2][r])  
     Z = X + Y
 
     return Z  
 
 
-
+#Method "Unjags" the 2D array to ensure that each column in the array has the same length
+#This helps in the algorithm to avoid any indexing issues.  We append a 0 to the end of the arrays
+#TODO: More than 3 string
 def UnjagArray(arr):
     maxLength = max([len(arr[0]), len(arr[1]), len(arr[2])])
 
@@ -73,7 +95,8 @@ def UnjagArray(arr):
             for j in range(s):
                 arr[i].append(0)
 
-
+#Method gets the indexes for the strings that were used in calculating the selected Z
+#TODO:  More than I,J,K
 def GetIJK(r, arr):
     newRow = []
     l = len(r)
@@ -82,6 +105,7 @@ def GetIJK(r, arr):
 
     return newRow
 
+#Get the next indexes that are greater than what is passed in r
 def GetNextIndexes(r, arr):
     newIndexes = []
     l = len(r) #num strings
@@ -89,17 +113,16 @@ def GetNextIndexes(r, arr):
     for i in range(l):
         for j in range(len(arr[i])):
             if arr[i][j] > r[i]:
-                #newIndexes.append(arr[i][j])
                 newIndexes.append(j)
                 break
 
     return newIndexes
 
+#Method does the work to get the next letter in the LCS
 def GetLetter(newPosa, newPosc, newPost, newPosg):
 
     #Send positions to each process
- 
-    comm.send(1, newPosa)
+     comm.send(1, newPosa)
     comm.send(2, newPosc)
     comm.send(3, newPost)
     comm.send(4, newPosg)
@@ -137,15 +160,14 @@ def GetLetter(newPosa, newPosc, newPost, newPosg):
     return newRow
 
 
+#Begin work using mincemeat to map/reduce the passed in data
 s = mincemeat.Server()
 
-# The data source can be any dictionary-like object
 s.datasource = dict(enumerate(data))
 s.mapfn = mapfn
 s.reducefn = reducefn
 
 results = s.run_server(password="changeme")
-
 
 #Compile results into 4 arrays
 Ba = []
@@ -175,6 +197,10 @@ UnjagArray(Bc)
 UnjagArray(Bt)
 UnjagArray(Bg)
 
+
+#Now we parallelize the calculating of the Z values
+#We create 5 seperate processes, 1 master process to direct and control
+#and 4 other processes to each calculated the Z values
 comm = PSim(5)  #4 bases
 
 newPosa = [0,0,0]
