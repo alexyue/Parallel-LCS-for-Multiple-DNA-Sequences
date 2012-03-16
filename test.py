@@ -90,6 +90,44 @@ def GetNextIndexes(r, arr):
 
     return newIndexes
 
+def GetLetter(newPosa, newPosc, newPost, newPosg):
+    #Send positions to each process    
+    comm.send(1, newPosa)
+    comm.send(2, newPosc)
+    comm.send(3, newPost)
+    comm.send(4, newPosg)
+
+    #receive Z's
+    Za = comm.recv(1)
+    Zc = comm.recv(2)
+    Zt = comm.recv(3)
+    Zg = comm.recv(4)
+
+    #Get min Z and print letter
+    newZ = {Za:"A", Zc:"C", Zt:"T", Zg:"G"}
+    minZ = min(Za, Zc, Zt, Zg)
+    
+    letter = newZ[minZ]
+
+    if letter == "A":
+        arr = Ba
+        nextPos = newPosa
+    elif letter == "C":
+        arr = Bc
+        nextPos = newPosc
+    elif letter == "T":
+        arr = Bt
+        nextPos = newPost
+    elif letter == "G":
+        arr = Bg
+        nextPos = newPosg
+
+    print letter
+
+    #get next index
+    newRow = GetIJK(nextPos, arr) 
+
+    return newRow
 
 s = mincemeat.Server()
 
@@ -129,43 +167,60 @@ UnjagArray(Bc)
 UnjagArray(Bt)
 UnjagArray(Bg)
 
-newPosa = [0,0,0]
-newPosc = [0,0,0]
-newPost = [0,0,0]
-newPosg = [0,0,0]
+comm = PSim(5)  #4 bases
 
-for i in range(6):
-    Za = CalcXYZ(newPosa,Ba)
-    Zc = CalcXYZ(newPosc,Bc)
-    Zt = CalcXYZ(newPost,Bt)
-    Zg = CalcXYZ(newPosg,Bg)
+if comm.rank == 0:
+    newPosa = [0,0,0]
+    newPosc = [0,0,0]
+    newPost = [0,0,0]
+    newPosg = [0,0,0]
 
-    newZ = {Za:"A", Zc:"C", Zt:"T", Zg:"G"}
-    minZ = min(Za, Zc, Zt, Zg)
 
-    letter = newZ[minZ]
-
-    if letter == "A":
-        arr = Ba
-        nextPos = newPosa
-    elif letter == "C":
-        arr = Bc
-        nextPos = newPosc
-    elif letter == "T":
-        arr = Bt
-        nextPos = newPost
-    elif letter == "G":
-        arr = Bg
-        nextPos = newPosg
-
-    print letter
-
-    newRow = GetIJK(nextPos, arr) 
+    newRow = GetLetter(newPosa, newPosc, newPost, newPosg)
 
     newPosa = GetNextIndexes(newRow, Ba)
     newPosc = GetNextIndexes(newRow, Bc)
     newPost = GetNextIndexes(newRow, Bt)
     newPosg = GetNextIndexes(newRow, Bg)
 
-    print newPosa, newPosc, newPost, newPosg
-    #print newPosc
+elif comm.rank == 1:
+    #receive arrays
+    newPos = comm.recv(0)
+
+    #calc Z
+    Z = CalcXYZ(newPos,Ba)
+
+    #send Z back
+    comm.send(0,Z)
+
+elif comm.rank == 2:
+    #receive arrays
+    newPos = comm.recv(0)
+
+    #calc Z
+    Z = CalcXYZ(newPos,Bc)
+
+    #send Z back
+    comm.send(0,Z)
+
+elif comm.rank == 3:
+    #receive arrays
+    newPos = comm.recv(0)
+
+    #calc Z
+    Z = CalcXYZ(newPos,Bt)
+
+    #send Z back
+    comm.send(0,Z)
+
+elif comm.rank == 4:
+    #receive arrays
+    newPos = comm.recv(0)
+
+    #calc Z
+    Z = CalcXYZ(newPos,Bg)
+
+    #send Z back
+    comm.send(0,Z)
+
+
