@@ -19,10 +19,6 @@ import math
 import sys
 from psim import PSim
 
-#TODO:  
-#       Fix if no A,C,G, or T in string
-#       Generalize more?
-
 data = ["ACTTCAGGCTAA",
         "TTCTAAAGCAAT",
         "AACCGTATTCGA",
@@ -60,7 +56,7 @@ def reducefn(k, vs):
                 Bt.append(z)
             elif vs[i].keys()[0] == "G":
                 Bg.append(z)
- 
+
     return {"A": Ba}, {"C": Bc} , {"T": Bt}, {"G": Bg}
 
 #Method calculates Z value which is used in the algorithm to figure out
@@ -101,6 +97,7 @@ def UnjagArray(arr):
                 arr[i].append(0)
 
 #Method gets the indexes for the strings that were used in calculating the selected Z
+#These indexes are then used in the next iteration to find the next values to calculate X,Y,Z
 def GetIJK(r, arr):
     newRow = []
     l = len(r)
@@ -123,6 +120,7 @@ def GetNextIndexes(r, arr):
     return newIndexes
 
 #Method does the work to get the next letter in the LCS
+#Sends out the Z arrays to be calculated for each base to each process
 def GetLetter(newPosa, newPosc, newPost, newPosg):
 
     #Send positions to each process
@@ -173,7 +171,10 @@ s.reducefn = reducefn
 
 results = s.run_server(password="changeme")
 
-#Compile results into 4 arrays
+#After the map/reduce portion, break out each string list and group them by 
+#their indexes.  
+#ie.  Group all index A base positions into one array, group all index C base positions into one array, etc.
+
 Ba = []
 Bc = []
 Bg = []
@@ -201,7 +202,7 @@ UnjagArray(Bc)
 UnjagArray(Bt)
 UnjagArray(Bg)
 
-#Number of strings
+#Number of strings we are comparing
 numStrings = len(Ba)
 
 newPosa = []
@@ -223,6 +224,7 @@ comm = PSim(5)  #4 bases
 
 while True:
 
+    #rank 0 is the director of the process and controls the loop and what to send
     if comm.rank == 0:
         newRow = GetLetter(newPosa, newPosc, newPost, newPosg)
 
@@ -231,6 +233,7 @@ while True:
         newPost = GetNextIndexes(newRow, Bt)
         newPosg = GetNextIndexes(newRow, Bg)
        
+        #Exit the loop when there are no other values to calculate Z with
         if len(newPosa) < numStrings and \
            len(newPosc) < numStrings and \
            len(newPost) < numStrings and \
@@ -253,7 +256,7 @@ while True:
             Z = sys.maxint
         else:
             Z = CalcXYZ(newPos, B)
-
+     
         comm.send(0, Z)
 
 
