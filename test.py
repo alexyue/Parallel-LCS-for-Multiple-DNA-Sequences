@@ -1,17 +1,6 @@
 #Alex Yue
 #CSC 503
 #Final Project - LCS in Multiple DNA Sequences
-#
-#
-#This program is used to determine the longest common subsequence (LCS) found between multiple DNA
-#sequences.  The algorithm is based on the following research paper here:
-#    www.niitcrcs.com/iccs/papers/2005_48.pdf
-#
-#Some improvements were made in addition to the algorithm, in particular the initialization of the
-#"buckets".  Using Map/Reduce we can parallelize the filling of the buckets to keep the runtime down.
-#
-#This program assumes that we are only working with nucleotides (4 bases, A,C,T,G), although could 
-#be generalized to a more generic alphabet.
 
 #!/usr/bin/env python
 import mincemeat
